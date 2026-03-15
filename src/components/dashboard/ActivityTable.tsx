@@ -63,7 +63,7 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
       setLoading(true);
       const client = createPublicClient({
         chain: base,
-        transport: http('https://base-mainnet.g.alchemy.com/v2/1gMNepUoqdEeE6edf46Dz')
+        transport: http('https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}')
       });
 
       const currentBlock = await client.getBlockNumber();
