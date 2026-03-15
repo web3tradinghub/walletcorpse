@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const res = await fetch('http://localhost:3001/register-key', {
+    const res = await fetch('https://walletcorpse-production.up.railway.app/register-key', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)

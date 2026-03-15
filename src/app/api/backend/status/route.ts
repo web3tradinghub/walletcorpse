@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const res = await fetch('http://localhost:3001/status', { 
+    const res = await fetch('https://walletcorpse-production.up.railway.app/status', { 
       cache: 'no-store',
       signal: AbortSignal.timeout(3000)
     });
