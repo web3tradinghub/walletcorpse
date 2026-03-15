@@ -1,10 +1,10 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { base, sepolia } from 'wagmi/chains';
+import { base } from 'wagmi/chains';
 
 export const config = getDefaultConfig({
   appName: 'WalletCorpse',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-  chains: [sepolia, base],
+  chains: [base],
   ssr: true,
 });
 
@@ -22,18 +22,25 @@ export const CONTRACT_ABI = [
     outputs: []
   },
   {
-    name: 'deactivate',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [{ name: 'compromisedWallet', type: 'address' }],
-    outputs: []
-  },
-  {
     name: 'isWalletActive',
     type: 'function',
     stateMutability: 'view',
     inputs: [{ name: 'wallet', type: 'address' }],
     outputs: [{ name: '', type: 'bool' }]
+  },
+  {
+    name: 'getSafeWallet',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'compromised', type: 'address' }],
+    outputs: [{ name: '', type: 'address' }]
+  },
+  {
+    name: 'safeToCompromised',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: '', type: 'address' }],
+    outputs: [{ name: '', type: 'address' }]
   },
   {
     name: 'getActivationFee',
@@ -66,6 +73,13 @@ export const CONTRACT_ABI = [
       { name: '_totalRescued', type: 'uint256' },
       { name: '_accumulatedFees', type: 'uint256' }
     ]
+  },
+  {
+    name: 'deactivate',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'compromisedWallet', type: 'address' }],
+    outputs: []
   },
   {
     name: 'WalletActivated',

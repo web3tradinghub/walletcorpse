@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Terminal, Clock, Activity, ShieldCheck, ShieldAlert, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createPublicClient, http, parseAbiItem } from 'viem';
-import { sepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 import { CONTRACT_ADDRESS } from '@/lib/web3/config';
 
 interface ActivityItem {
@@ -29,7 +29,6 @@ const statusStyles = {
     border: 'border-red-500/20',
     dot: 'bg-red-500',
     label: 'Drained',
-    icon: ShieldAlert,
   },
   rescued: {
     color: 'text-[#00ff50]',
@@ -37,7 +36,6 @@ const statusStyles = {
     border: 'border-[#00ff50]/20',
     dot: 'bg-[#00ff50]',
     label: 'Rescued',
-    icon: ShieldCheck,
   },
   intercepted: {
     color: 'text-amber-500',
@@ -45,7 +43,6 @@ const statusStyles = {
     border: 'border-amber-500/20',
     dot: 'bg-amber-500',
     label: 'Intercepted',
-    icon: Activity,
   },
 };
 
@@ -65,14 +62,13 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
     try {
       setLoading(true);
       const client = createPublicClient({
-        chain: sepolia,
-        transport: http()
+        chain: base,
+        transport: http('https://base-mainnet.g.alchemy.com/v2/1gMNepUoqdEeE6edf46Dz')
       });
 
       const currentBlock = await client.getBlockNumber();
-      const fromBlock = currentBlock - BigInt(50000);
+      const fromBlock = currentBlock - BigInt(9000);
 
-      // ETH Rescue events
       const ethRescueLogs = await client.getLogs({
         address: CONTRACT_ADDRESS,
         event: parseAbiItem('event ETHRescued(address indexed compromised, address indexed safe, uint256 totalAmount, uint256 userAmount, uint256 platformFee, uint256 timestamp)'),
@@ -80,7 +76,6 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
         toBlock: currentBlock,
       });
 
-      // ERC20 Rescue events
       const erc20Logs = await client.getLogs({
         address: CONTRACT_ADDRESS,
         event: parseAbiItem('event ERC20Rescued(address indexed compromised, address indexed safe, address indexed token, uint256 userAmount, uint256 platformFee, uint256 timestamp)'),
@@ -88,7 +83,6 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
         toBlock: currentBlock,
       });
 
-      // Wallet Activated events
       const activatedLogs = await client.getLogs({
         address: CONTRACT_ADDRESS,
         event: parseAbiItem('event WalletActivated(address indexed compromised, address indexed safe, uint256 fee, uint256 timestamp)'),
@@ -98,7 +92,6 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
 
       const allEvents: ActivityItem[] = [];
 
-      // ETH Rescue events process
       for (const log of ethRescueLogs) {
         const args = log.args as any;
         const date = new Date(Number(args.timestamp) * 1000);
@@ -113,7 +106,6 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
         });
       }
 
-      // ERC20 events process
       for (const log of erc20Logs) {
         const args = log.args as any;
         const date = new Date(Number(args.timestamp) * 1000);
@@ -128,7 +120,6 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
         });
       }
 
-      // Activation events
       for (const log of activatedLogs) {
         const args = log.args as any;
         const date = new Date(Number(args.timestamp) * 1000);
@@ -143,9 +134,7 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
         });
       }
 
-      // Sort by time newest first
       allEvents.sort((a, b) => b.time.localeCompare(a.time));
-
       setActivities(allEvents);
     } catch (err) {
       console.error('Error loading events:', err);
@@ -158,8 +147,6 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
   return (
     <div className="w-full max-w-[1600px] mx-auto py-10">
       <div className="flex flex-col h-[600px] bg-black/40 border border-[#00ff50]/15 rounded-3xl overflow-hidden backdrop-blur-xl">
-        
-        {/* Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-[#00ff50]/10 bg-black/60">
           <div className="flex items-center gap-3">
             <Terminal size={20} className="text-[#00ff50]" />
@@ -173,12 +160,11 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00ff50]"></span>
             </span>
             <span className="text-[10px] text-[#00ff50] font-mono font-bold uppercase tracking-widest">
-              Live Blockchain Data
+              Live — Base Chain
             </span>
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
@@ -193,7 +179,7 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
                 <ShieldCheck size={48} className="text-[#00ff50]/20 mx-auto mb-3" />
                 <p className="text-slate-400 text-sm font-bold">No activity yet</p>
                 <p className="text-slate-600 text-xs mt-1">
-                  Defense is active — waiting for incoming transactions
+                  Defense active — waiting for incoming transactions
                 </p>
               </div>
             </div>
@@ -201,7 +187,7 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white/5 text-[10px] font-black text-[#00ff50]/60 uppercase tracking-[0.2em] border-b border-[#00ff50]/10">
-                  <th className="px-8 py-4">Time (UTC)</th>
+                  <th className="px-8 py-4">Time</th>
                   <th className="px-8 py-4">Event</th>
                   <th className="px-8 py-4 text-right">Amount</th>
                   <th className="px-8 py-4 text-center">Status</th>
@@ -217,7 +203,7 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.05 }}
                       className="hover:bg-white/3 transition-colors group cursor-pointer"
-                      onClick={() => activity.txHash && window.open(`https://sepolia.etherscan.io/tx/${activity.txHash}`, '_blank')}
+                      onClick={() => activity.txHash && window.open(`https://basescan.org/tx/${activity.txHash}`, '_blank')}
                     >
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-2 text-slate-400 font-mono text-sm">
@@ -258,10 +244,9 @@ export function ActivityTable({ compromisedWallet }: ActivityTableProps) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="px-8 py-4 bg-black/60 border-t border-[#00ff50]/10 flex items-center justify-between text-[10px] font-mono text-[#00ff50]/40 uppercase tracking-widest">
           <span>Contract: {CONTRACT_ADDRESS?.slice(0, 10)}...</span>
-          <span>Network: Sepolia Testnet</span>
+          <span>Network: Base Mainnet</span>
         </div>
       </div>
     </div>

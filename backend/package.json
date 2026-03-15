@@ -8,8 +8,10 @@
   },
   "dependencies": {
     "@flashbots/ethers-provider-bundle": "^0.6.2",
-    "ethers": "5.7.2",
-    "dotenv": "^16.0.0"
+    "axios": "^1.13.6",
+    "better-sqlite3": "^12.8.0",
+    "dotenv": "^16.0.0",
+    "ethers": "5.7.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"

@@ -2,45 +2,58 @@
 
 import { motion } from 'framer-motion';
 import { useAccount, useReadContract } from 'wagmi';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/web3/config';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { StatusAlertBar } from '@/components/dashboard/StatusAlertBar';
 import { MetricCards } from '@/components/dashboard/MetricCards';
 import { DefenseModes } from '@/components/dashboard/DefenseModes';
+import { LiveStatus } from '@/components/dashboard/LiveStatus';
 import { ActivityTable } from '@/components/dashboard/ActivityTable';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Shield, AlertTriangle } from 'lucide-react';
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
 function DashboardContent() {
   const router = useRouter();
-  const params = useSearchParams();
   const { address, isConnected } = useAccount();
   const [compromisedWallet, setCompromisedWallet] = useState<string>('');
 
-  useEffect(() => {
-    const wallet = params.get('wallet');
-    if (wallet) {
-      setCompromisedWallet(wallet);
-    } else if (address) {
-      setCompromisedWallet(address);
-    }
-  }, [params, address]);
-
-  // Real data from contract
-  const { data: walletInfo, isLoading } = useReadContract({
+  // 1. Check if connected address is a safe wallet for some compromised wallet
+  const { data: lookupCompromised, isLoading: isLoadingLookup } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
-    functionName: 'getWalletInfo',
-    args: compromisedWallet ? [compromisedWallet as `0x${string}`] : undefined,
-    query: { enabled: !!compromisedWallet }
+    functionName: 'safeToCompromised',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address }
   });
 
-  const { data: isActive } = useReadContract({
+  // 2. Check if connected address itself is an active compromised wallet
+  const { data: isSelfActive, isLoading: isLoadingSelfCheck } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: 'isWalletActive',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address }
+  });
+
+  useEffect(() => {
+    if (lookupCompromised && lookupCompromised !== ZERO_ADDRESS) {
+      setCompromisedWallet(lookupCompromised);
+    } else if (isSelfActive && address) {
+      setCompromisedWallet(address);
+    } else {
+      setCompromisedWallet('');
+    }
+  }, [lookupCompromised, isSelfActive, address]);
+
+  // Real data from contract
+  const { data: walletInfo, isLoading: isLoadingInfo } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getWalletInfo',
     args: compromisedWallet ? [compromisedWallet as `0x${string}`] : undefined,
     query: { enabled: !!compromisedWallet }
   });
@@ -50,6 +63,8 @@ function DashboardContent() {
     abi: CONTRACT_ABI,
     functionName: 'getPlatformStats',
   });
+
+  const isLoading = isLoadingLookup || isLoadingSelfCheck || (!!compromisedWallet && isLoadingInfo);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -75,22 +90,31 @@ function DashboardContent() {
     );
   }
 
+  // Loading state
+  if (isLoading && !compromisedWallet) {
+    return (
+      <div className="min-h-screen bg-[#050a05] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#00ff50] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   // Wallet not protected
-  if (!isLoading && isActive === false) {
+  if (!isLoading && !compromisedWallet) {
     return (
       <div className="min-h-screen bg-[#050a05] flex items-center justify-center p-6">
         <div className="text-center max-w-md">
           <AlertTriangle size={64} className="text-yellow-400/50 mx-auto mb-4" />
-          <h2 className="text-2xl font-black text-white mb-2">Wallet Not Protected</h2>
+          <h2 className="text-2xl font-black text-white mb-2">No Active Protection</h2>
           <p className="text-slate-400 mb-6 text-sm">
-            This wallet is not under WalletCorpse protection yet.
+            This wallet is not linked to any active protection protocol.
           </p>
           <button
             onClick={() => router.push('/activate')}
             style={{cursor:'pointer'}}
             className="bg-[#00ff50] text-[#050a05] px-8 py-3 rounded-xl font-black uppercase tracking-tight hover:bg-[#00ff50]/90 transition-all"
           >
-            Activate Defense — $20
+            Activate Defense
           </button>
         </div>
       </div>
@@ -156,14 +180,21 @@ function DashboardContent() {
             </div>
           </div>
 
-          {/* Safe wallet */}
-          <div className="bg-[#00ff50]/5 border border-[#00ff50]/15 rounded-xl p-4">
-            <p className="text-xs text-slate-500 mb-1 font-mono">SAFE WALLET (RECEIVING RESCUED FUNDS)</p>
-            <p className="text-[#00ff50] font-mono text-sm truncate">{safeWallet}</p>
+          {/* Addresses info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            <div className="bg-[#ff0050]/5 border border-[#ff0050]/15 rounded-xl p-4">
+              <p className="text-xs text-slate-500 mb-1 font-mono uppercase">Compromised Wallet (Under Protection)</p>
+              <p className="text-[#ff0050] font-mono text-sm truncate">{compromisedWallet}</p>
+            </div>
+            <div className="bg-[#00ff50]/5 border border-[#00ff50]/15 rounded-xl p-4">
+              <p className="text-xs text-slate-500 mb-1 font-mono uppercase">Safe Wallet (Receiving Funds)</p>
+              <p className="text-[#00ff50] font-mono text-sm truncate">{safeWallet}</p>
+            </div>
           </div>
         </motion.section>
 
         <motion.div variants={itemVariants}>
+        <LiveStatus compromisedWallet={compromisedWallet} />
           <MetricCards
             rescuedETH={rescuedETH}
             rescueCount={rescueCount}
