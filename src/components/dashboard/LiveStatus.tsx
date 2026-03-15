@@ -69,7 +69,7 @@ export function LiveStatus({ compromisedWallet }: LiveStatusProps) {
   }, [compromisedWallet]);
 
   return (
-    <>
+    <div>
       {/* New rescue notification popup */}
       <AnimatePresence>
         {newRescue && (
@@ -166,6 +166,6 @@ export function LiveStatus({ compromisedWallet }: LiveStatusProps) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
