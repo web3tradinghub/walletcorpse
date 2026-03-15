@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(req: Request, { params }: { params: { address: string } }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ address: string }> }
+) {
   try {
-    const res = await fetch(`https://walletcorpse-production.up.railway.app/activity/${params.address}`, { cache: 'no-store' });
+    const { address } = await params;
+    const res = await fetch(
+      `https://walletcorpse-production.up.railway.app/activity/${address}`,
+      { cache: 'no-store' }
+    );
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
