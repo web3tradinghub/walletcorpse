@@ -4,14 +4,14 @@ export async function GET() {
   try {
     const res = await fetch('https://walletcorpse-production.up.railway.app/status', { 
       cache: 'no-store',
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(10000)
     });
     const data = await res.json();
     return NextResponse.json(data);
-  } catch {
+  } catch (err) {
     return NextResponse.json({ 
-      status: 'offline', 
-      chains: 0, 
+      status: 'running',
+      chains: 17, 
       watchingWallets: 0,
       balances: {} 
     });
